@@ -1,0 +1,8 @@
+.*.swp
+.DS_Store
+*-private.*
+vendor/
+Gopkg.lock
+.env
+node_modules
+package-lock.json
