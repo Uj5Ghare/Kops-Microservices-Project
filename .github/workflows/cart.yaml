@@ -12,8 +12,6 @@ on:
       - env/staging
     paths:
       - "cart/**"
-      - "user/**"
-      - "catalogue/**"
       - ".github/workflows/cart.yaml"
   pull_request:
     branches:
@@ -22,8 +20,6 @@ on:
       - env/staging
     paths:
       - "cart/**"
-      - "user/**"
-      - "catalogue/**"
       - ".github/workflows/cart.yaml"
 
 # Security: restrict default permissions to read-only
@@ -39,7 +35,7 @@ jobs:
       packages: write # Needed to push to GHCR
     strategy:
       matrix:
-        component: [cart, user, catalogue]
+        component: [cart]
     outputs:
       image_tag: ${{ steps.meta.outputs.version }}
     steps:
