@@ -1,0 +1,181 @@
+version: '3'
+services:
+  mongodb:
+    build:
+      context: mongo
+    image: ${REPO}/shopstack-mongodb:${TAG}
+    networks:
+      - shopstack
+    logging: &logging
+      driver: "json-file"
+      options:
+        max-size: "25m"
+        max-file: "2"
+
+  redis:
+    image: redis:6.2-alpine
+    networks:
+      - shopstack
+    logging:
+      <<: *logging
+
+  rabbitmq:
+    image: rabbitmq:3.8-management-alpine
+    networks:
+      - shopstack
+    logging:
+      <<: *logging
+      
+  catalogue:
+    build:
+      context: catalogue
+    image: ${REPO}/shopstack-catalogue:${TAG}
+    depends_on:
+      - mongodb
+    networks:
+      - shopstack
+    healthcheck:
+      test: [ "CMD", "curl", "-H", "X-INSTANA-SYNTHETIC: 1", "-f", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    logging:
+      <<: *logging
+
+  user:
+    build:
+      context: user
+    image: ${REPO}/shopstack-user:${TAG}
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - shopstack
+    healthcheck:
+      test: [ "CMD", "curl", "-H", "X-INSTANA-SYNTHETIC: 1", "-f", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    logging:
+      <<: *logging
+
+  cart:
+    build:
+      context: cart
+    image: ${REPO}/shopstack-cart:${TAG}
+    depends_on:
+      - redis
+    networks:
+      - shopstack
+    healthcheck:
+      test: [ "CMD", "curl", "-H", "X-INSTANA-SYNTHETIC: 1", "-f", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    logging:
+      <<: *logging
+  mysql:
+    build:
+      context: mysql
+    image: ${REPO}/shopstack-mysqldb:${TAG}
+    cap_add:
+      - NET_ADMIN
+    networks:
+      - shopstack
+    logging:
+      <<: *logging
+
+  shipping:
+    build:
+      context: shipping
+    image: ${REPO}/shopstack-shipping:${TAG}
+    depends_on:
+      - mysql
+    networks:
+      - shopstack
+    healthcheck:
+      test: ["CMD", "curl", "-H", "X-INSTANA-SYNTHETIC: 1", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    logging:
+      <<: *logging
+      
+  ratings:
+    build:
+      context: ratings
+    image: ${REPO}/shopstack-ratings:${TAG}
+    environment:
+      APP_ENV: prod
+    networks:
+      - shopstack
+    depends_on:
+      - mysql
+    healthcheck:
+      test: ["CMD", "curl", "-H", "X-INSTANA-SYNTHETIC: 1", "-f", "http://localhost/_health"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    logging:
+      <<: *logging
+
+  payment:
+    build:
+      context: payment
+    image: ${REPO}/shopstack-payment:${TAG}
+    depends_on:
+      - rabbitmq
+    networks:
+      - shopstack
+    healthcheck:
+      test: ["CMD", "curl", "-H", "X-INSTANA-SYNTHETIC: 1", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    # Uncomment to change payment gateway
+    #environment:
+      #PAYMENT_GATEWAY: "https://www.worldpay.com"
+    logging:
+      <<: *logging
+
+  dispatch:
+    build:
+      context: dispatch
+    image: ${REPO}/shopstack-dispatch:${TAG}
+    depends_on:
+      - rabbitmq
+    networks:
+      - shopstack
+    logging:
+      <<: *logging
+
+  web:
+    build:
+      context: web
+      args:
+        # agent key to download tracing libs
+        KEY: ${INSTANA_AGENT_KEY}
+    image: ${REPO}/shopstack-web:${TAG}
+    depends_on:
+      - catalogue
+      - user
+      - shipping
+      - payment
+    ports:
+      - "8080:8080"
+    networks:
+      - shopstack
+    healthcheck:
+      test: [ "CMD", "curl", "-H", "X-INSTANA-SYNTHETIC: 1", "-f", "http://localhost:8080/" ]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    # Uncomment to enable Instana EUM
+    # environment:
+      # INSTANA_EUM_KEY: <your eum key>
+      # INSTANA_EUM_REPORTING_URL: <your reporting url>
+    logging:
+      <<: *logging
+
+networks:
+  shopstack:

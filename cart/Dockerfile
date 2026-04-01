@@ -1,4 +1,4 @@
-FROM node:14
+FROM node:14-alpine
 
 ENV INSTANA_AUTO_PROFILE true
 
@@ -8,9 +8,8 @@ WORKDIR /opt/server
 
 COPY package.json /opt/server/
 
-RUN npm install
+RUN npm install && npm cache clean --force
 
 COPY server.js /opt/server/
 
 CMD ["node", "server.js"]
-
