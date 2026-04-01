@@ -41,7 +41,7 @@ jobs:
       packages: write # Needed to push to GHCR
     strategy:
       matrix:
-        component: [${{ env.SERVICE }}]
+        component: ${{ env.SERVICE }}
     outputs:
       image_tag: ${{ steps.meta.outputs.version }}
     steps:
@@ -89,7 +89,7 @@ jobs:
     needs: build
     strategy:
       matrix:
-        component: [${{ env.SERVICE }}]
+        component: ${{ env.SERVICE }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -114,7 +114,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        component: [${{ env.SERVICE }}]
+        component: ${{ env.SERVICE }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
