@@ -26,7 +26,13 @@ on:
 permissions:
   contents: read
 
+env:
+  SERVICE: "cart"
+  PROJECT: "shopstack"
+  ENV: "staging"
+
 jobs:
+
   build:
     name: "🐳 Build ${{ matrix.component }}"
     runs-on: ubuntu-latest
@@ -35,7 +41,7 @@ jobs:
       packages: write # Needed to push to GHCR
     strategy:
       matrix:
-        component: [cart]
+        component: [${{ env.SERVICE }}]
     outputs:
       image_tag: ${{ steps.meta.outputs.version }}
     steps:
@@ -56,7 +62,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/shopstack/shopstack-${{ matrix.component }}
+          images: ghcr.io/${{ github.repository_owner }}/${{ env.ENV }}/${{ env.PROJECT }}-${{ matrix.component }}
           tags: |
             type=sha,prefix=
             type=ref,event=branch
@@ -75,3 +81,46 @@ jobs:
           # Security: provenance and SBOM
           provenance: true
           sbom: true
+
+
+  image-scan:
+    name: "🔬 Scan ${{ matrix.component }} Image"
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      matrix:
+        component: [${{ env.SERVICE }}]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build image for scanning
+        run: |
+          docker build -t ${{ env.PROJECT }}-${{ matrix.component }}:scan ./${{ matrix.component }}
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "${{ env.PROJECT }}-${{ matrix.component }}:scan"
+          format: "table"
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
+          timeout: "10m"
+
+  dockerfile-lint:
+    name: "📋 Dockerfile Lint"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        component: [${{ env.SERVICE }}]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: ${{ matrix.component }}/Dockerfile
+          failure-threshold: warning
