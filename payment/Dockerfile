@@ -3,7 +3,9 @@ FROM python:3.9-alpine AS builder
 
 WORKDIR /app
 
-RUN apk add --no-cache build-base linux-headers
+RUN apk add --no-cache \
+    build-base=0.5-r3 \
+    linux-headers=6.14.2-r0
 
 COPY requirements.txt .
 
@@ -23,5 +25,3 @@ COPY payment.ini /app/
 EXPOSE 8080
 
 CMD ["uwsgi", "--ini", "payment.ini"]
-
-

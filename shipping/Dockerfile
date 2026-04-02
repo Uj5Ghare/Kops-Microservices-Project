@@ -1,36 +1,16 @@
-#
-# Build
-#
-FROM debian:12 AS build
-
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        ca-certificates-java \
-        maven && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    update-ca-certificates -f
-
+## Build
+FROM maven:3.9.14-amazoncorretto-8-debian AS build
 WORKDIR /opt/shipping
-
 COPY pom.xml /opt/shipping/
 RUN mvn dependency:resolve
 COPY src /opt/shipping/src/
 RUN mvn package
 
-#
-# Run
-#
+## Run
 FROM amazoncorretto:8
-
 EXPOSE 8080
-
 WORKDIR /opt/shipping
-
 ENV CART_ENDPOINT=cart:8080
 ENV DB_HOST=mysql
-
 COPY --from=build /opt/shipping/target/shipping-1.0.jar shipping.jar
-
 CMD [ "java", "-Xmn256m", "-Xmx768m", "-jar", "shipping.jar" ]
-
