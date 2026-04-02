@@ -2,7 +2,7 @@
 # Shopstack - DevSecOps CI/CD Pipeline
 # ==============================================================
 
-name: Shopstack DevSecOps Pipeline
+name: Shopstack DevSecOps Pipeline For Catalogue
 
 on:
   pull_request:
