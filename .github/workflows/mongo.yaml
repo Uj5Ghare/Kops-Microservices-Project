@@ -5,12 +5,6 @@
 name: Shopstack DevSecOps Pipeline
 
 on:
-  push:
-    branches:
-      - env/prod
-    paths:
-      - "mongo/**"
-      - ".github/workflows/mongo.yaml"
   pull_request:
     branches:
       - env/prod

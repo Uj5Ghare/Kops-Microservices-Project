@@ -5,12 +5,6 @@
 name: Shopstack DevSecOps Pipeline
 
 on:
-  push:
-    branches:
-      - env/prod
-    paths:
-      - "cart/**"
-      - ".github/workflows/cart.yaml"
   pull_request:
     branches:
       - env/prod
