@@ -9,14 +9,14 @@ on:
     branches:
       - env/prod
     paths:
-      - "cart/**"
-      - ".github/workflows/cart.yaml"
+      - "mysql/**"
+      - ".github/workflows/mysql.yaml"
   pull_request:
     branches:
       - env/prod
     paths:
-      - "cart/**"
-      - ".github/workflows/cart.yaml"
+      - "mysql/**"
+      - ".github/workflows/mysql.yaml"
 
 # Security: restrict default permissions to read-only
 permissions:
@@ -35,7 +35,7 @@ jobs:
       packages: write # Needed to push to GHCR
     strategy:
       matrix:
-        component: ["cart"]
+        component: ["mysql"]
     outputs:
       image_tag: ${{ steps.meta.outputs.version }}
     steps:
@@ -83,7 +83,7 @@ jobs:
     needs: build
     strategy:
       matrix:
-        component: ["cart"]
+        component: ["mysql"]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -108,7 +108,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        component: ["cart"]
+        component: ["mysql"]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
