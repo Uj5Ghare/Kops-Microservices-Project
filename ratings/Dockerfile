@@ -1,17 +1,19 @@
-#
-# Build the app
-#
+## Composer stage
+FROM composer:2.7 AS composer
+
+## Build the app
 FROM php:7.4-apache-bullseye
 
 RUN apt-get update && apt-get install -yqq --no-install-recommends \
-    unzip libzip-dev \
+    unzip=6.0-26+deb11u1 \
+    libzip-dev=1.7.3-1 \
     && docker-php-ext-install pdo_mysql opcache zip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Enable AutoProfile for PHP which is currently opt-in beta
 RUN echo "instana.enable_auto_profile=1" > "/usr/local/etc/php/conf.d/zzz-instana-extras.ini"
 
-# relax permissions on status
+# Relax permissions on status
 COPY status.conf /etc/apache2/mods-available/status.conf
 # Enable Apache mod_rewrite and status
 RUN a2enmod rewrite && a2enmod status
@@ -30,4 +32,3 @@ RUN composer install --no-dev --optimize-autoloader
 RUN rm -Rf /var/www/var/* \
     && chown -R www-data /var/www \
     && chmod -R 777 /var/www
-

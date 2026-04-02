@@ -5,12 +5,6 @@
 name: Shopstack DevSecOps Pipeline
 
 on:
-  push:
-    branches:
-      - env/prod
-    paths:
-      - "ratings/**"
-      - ".github/workflows/ratings.yaml"
   pull_request:
     branches:
       - env/prod
