@@ -1,0 +1,32 @@
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: {{ .Values.defaults.labels }}
+spec:
+  provider: {{ .Values.spc.provider }}
+  parameters:
+    region: {{ .Values.spc.region }}
+    objects: |  
+      - objectName: {{ .Values.defaults.labels }}-preprod
+        objectType: secretsmanager
+        jmesPath:
+          - path: INSTANA_AUTO_PROFILE
+            objectAlias: INSTANA_AUTO_PROFILE
+          - path: REDIS_HOST
+            objectAlias: REDIS_HOST
+          - path: MONGO_URL
+            objectAlias: MONGO_URL
+          - path: USER_SERVER_PORT
+            objectAlias: USER_SERVER_PORT
+  secretObjects:
+    - secretName: {{ .Values.defaults.labels }}-preprod
+      type: Opaque
+      data:
+        - objectName: INSTANA_AUTO_PROFILE
+          key: INSTANA_AUTO_PROFILE
+        - objectName: REDIS_HOST
+          key: REDIS_HOST
+        - objectName: MONGO_URL
+          key: MONGO_URL
+        - objectName: USER_SERVER_PORT
+          key: USER_SERVER_PORT

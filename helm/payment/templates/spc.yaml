@@ -1,0 +1,44 @@
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: {{ .Values.defaults.labels }}
+spec:
+  provider: {{ .Values.spc.provider }}
+  parameters:
+    region: {{ .Values.spc.region }}
+    objects: |  
+      - objectName: {{ .Values.defaults.labels }}-preprod
+        objectType: secretsmanager
+        jmesPath:
+          - path: INSTANA_SERVICE_NAME
+            objectAlias: INSTANA_SERVICE_NAME
+          - path: CART_HOST
+            objectAlias: CART_HOST
+          - path: USER_HOST
+            objectAlias: USER_HOST
+          - path: PAYMENT_GATEWAY
+            objectAlias: PAYMENT_GATEWAY
+          - path: AMQP_HOST
+            objectAlias: AMQP_HOST
+          - path: PAYMENT_DELAY_MS
+            objectAlias: PAYMENT_DELAY_MS
+          - path: SHOP_PAYMENT_PORT
+            objectAlias: SHOP_PAYMENT_PORT
+  secretObjects:
+    - secretName: {{ .Values.defaults.labels }}-preprod
+      type: Opaque
+      data:
+        - objectName: INSTANA_SERVICE_NAME
+          key: INSTANA_SERVICE_NAME
+        - objectName: CART_HOST
+          key: CART_HOST
+        - objectName: USER_HOST
+          key: USER_HOST
+        - objectName: PAYMENT_GATEWAY
+          key: PAYMENT_GATEWAY
+        - objectName: AMQP_HOST
+          key: AMQP_HOST
+        - objectName: PAYMENT_DELAY_MS
+          key: PAYMENT_DELAY_MS
+        - objectName: SHOP_PAYMENT_PORT
+          key: SHOP_PAYMENT_PORT

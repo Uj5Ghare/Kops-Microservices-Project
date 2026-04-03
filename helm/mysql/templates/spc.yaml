@@ -1,0 +1,32 @@
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: {{ .Values.defaults.labels }}
+spec:
+  provider: {{ .Values.spc.provider }}
+  parameters:
+    region: {{ .Values.spc.region }}
+    objects: |  
+      - objectName: {{ .Values.defaults.labels }}-preprod
+        objectType: secretsmanager
+        jmesPath:
+          - path: MYSQL_ALLOW_EMPTY_PASSWORD
+            objectAlias: MYSQL_ALLOW_EMPTY_PASSWORD
+          - path: MYSQL_DATABASE
+            objectAlias: MYSQL_DATABASE
+          - path: MYSQL_USER
+            objectAlias: MYSQL_USER
+          - path: MYSQL_PASSWORD
+            objectAlias: MYSQL_PASSWORD
+  secretObjects:
+    - secretName: {{ .Values.defaults.labels }}-preprod
+      type: Opaque
+      data:
+        - objectName: MYSQL_ALLOW_EMPTY_PASSWORD
+          key: MYSQL_ALLOW_EMPTY_PASSWORD
+        - objectName: MYSQL_DATABASE
+          key: MYSQL_DATABASE
+        - objectName: MYSQL_USER
+          key: MYSQL_USER
+        - objectName: MYSQL_PASSWORD
+          key: MYSQL_PASSWORD

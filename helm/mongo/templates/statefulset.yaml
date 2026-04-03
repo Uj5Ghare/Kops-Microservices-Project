@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.defaults.labels }}
+  labels:
+    {{- include "cart.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ .Values.defaults.labels }}
+  replicas: {{ .Values.deploy.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.defaults.labels }}
+  template:
+    metadata:
+      annotations:
+        {{- include "cart.annotations" . | nindent 8 }}
+    spec:
+      {{- with .Values.deploy.tolerations }}
+      tolerations:
+        - key: {{ .key }}
+          operator: {{ .operator }}
+          value: {{ .value }}
+      {{- end }}
+      {{- with .Values.deploy.affinity }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: {{ .Values.deploy.affinity.nodeAffinity.key }}
+                operator: {{ .Values.deploy.affinity.nodeAffinity.operator }}
+                values:
+                - {{ .Values.deploy.affinity.nodeAffinity.values }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.deploy.image.repository }}:{{ .Values.deploy.image.tag }}"
+          imagePullPolicy: {{ .Values.deploy.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 27017
+              protocol: TCP
+          {{- if .Values.deploy.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.deploy.readinessProbe.path }}
+              port: http
+              scheme: {{ .Values.deploy.readinessProbe.scheme }}
+            initialDelaySeconds: {{ .Values.deploy.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.deploy.readinessProbe.periodSeconds }}
+            failureThreshold: {{ .Values.deploy.readinessProbe.failureThreshold }}
+            successThreshold: {{ .Values.deploy.readinessProbe.successThreshold }}
+          {{- end }}
+          {{- if .Values.deploy.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.deploy.livenessProbe.path }}
+              port: http
+              scheme: {{ .Values.deploy.livenessProbe.scheme }}
+            initialDelaySeconds: {{ .Values.deploy.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.deploy.livenessProbe.periodSeconds }}
+            failureThreshold: {{ .Values.deploy.livenessProbe.failureThreshold }}
+            successThreshold: {{ .Values.deploy.livenessProbe.successThreshold }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.deploy.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /data/db
+      restartPolicy: {{ .Values.deploy.restartPolicy }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: 1Gi

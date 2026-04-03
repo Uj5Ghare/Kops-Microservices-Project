@@ -1,0 +1,127 @@
+defaults:
+  namespace:
+    name: shopstack
+    enabled: false
+  labels: shipping
+  managedBy: Helm
+  annotations:
+    lang: java
+
+# DEPLOYMENT CONFIGURATION
+deploy:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/shopstack/shopstack-shipping
+    tag: latest
+    pullPolicy: IfNotPresent
+  affinity:
+    nodeAffinity:
+      key: app
+      operator: In
+      values: shopstack
+  strategy:
+    type: RollingUpdate
+    maxSurge: 50%
+    maxUnavailable: 0
+  resources:
+    requests:
+      memory: "200Mi" 
+      cpu: "100m"
+    limits:
+      memory: "500Mi"
+      cpu: "200m"
+  restartPolicy: Always
+  readinessProbe:
+    enabled: true
+    path: /
+    scheme: HTTP
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+  livenessProbe:
+    enabled: true
+    path: /
+    scheme: HTTP
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    failureThreshold: 3
+    successThreshold: 1
+  tolerations:
+    key: app
+    operator: Equal
+    value: shopstack
+  env:
+    - name: CART_ENDPOINT
+      value: "cart:8080"
+    - name: DB_HOST
+      value: "mysql"
+
+# SERVICE CONFIGURATION
+service:
+  type: ClusterIP
+  ports:
+    http:
+      name: http
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+
+# INGRESS CONFIGURATION
+ingress:
+  enabled: false
+  ingressClassName: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  host: shipping.shopstack.local
+  path: /
+  pathType: Prefix
+
+# HORIZONTAL POD AUTOSCALER CONFIGURATION
+hpa:
+  enabled: true
+  maxReplicas: 3
+  minReplicas: 1
+  cpu:
+    metrics:
+      resourceName: cpu
+      averageUtilization: 70
+      type: Utilization
+  behavior:
+    scaleDown:
+      policies:
+        periodSeconds: 15
+        type: Percent
+        value: 100
+      selectPolicy: Min
+      stabilizationWindowSeconds: 180
+    scaleUp:
+      policies:
+        periodSeconds: 15
+        type: Percent
+        value: 30
+      selectPolicy: Min
+      stabilizationWindowSeconds: 500
+
+# SECRET CONFIGURATION
+secret:
+  enabled: false
+  name: shipping-secret
+  type: Opaque
+  data: ""
+
+# POD DISRUPTION BUDGET CONFIGURATION
+pdb:
+  enabled: true
+  minAvailable: 1
+
+# SECRET PROVIDER CLASS CONFIGURATION
+spc:
+  provider: aws
+  region: ap-south-1
+  objects:
+    CART_ENDPOINT: CART_ENDPOINT
+    DB_HOST: DB_HOST
+
+configMap:
+  enabled: false
