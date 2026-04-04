@@ -19,8 +19,7 @@ permissions:
 env:
   PROJECT: "shopstack"
   ENV: "prod"
-  IMAGE: ghcr.io/${{ github.repository_owner }}/${{ env.ENV }}/${{ env.PROJECT }}-cart
-
+  
 jobs:
   build:
     name: "🐳 Build ${{ matrix.component }}"
@@ -137,7 +136,7 @@ jobs:
           git checkout origin/k8s/prod
 
           IMAGE_TAG=${{ steps.sha.outputs.short }}
-          sed -i 's/tag: .*/tag: ${{IMAGE_TAG}}/' helm/cart/values.yaml
+          sed -i 's/tag: .*/tag: ${IMAGE_TAG}/' helm/cart/values.yaml
 
           echo "✅ Updated images to tag: ${IMAGE_TAG}"
           grep "tag:" helm/cart/values.yaml
