@@ -5,7 +5,7 @@
 name: Shopstack DevSecOps Pipeline For Catalogue
 
 on:
-  pull_request:
+  push:
     branches:
       - env/prod
     paths:
