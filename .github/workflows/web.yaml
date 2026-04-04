@@ -130,21 +130,23 @@ jobs:
         id: sha
         run: echo "short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}
+          ref: k8s/${{ env.ENV }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Update K8s manifest with new image tags
         run: |
-          git fetch origin
-          git checkout origin/k8s/prod
-
           IMAGE_TAG=${{ steps.sha.outputs.short }}
           sed -i 's/tag: .*/tag: ${IMAGE_TAG}/' helm/web/values.yaml
-
           echo "✅ Updated images to tag: ${IMAGE_TAG}"
           grep "tag:" helm/web/values.yaml
-
       - name: Commit and push manifest update
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add helm/web/values.yaml
+          git add .
           git diff --cached --quiet || git commit -m "ci(${{ env.ENV }}): update helm web values to ${{ steps.sha.outputs.short }} [skip ci]"
           git push

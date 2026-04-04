@@ -55,7 +55,6 @@ jobs:
             type=sha,prefix=
             type=ref,event=branch
             type=raw,value=latest,enable={{is_default_branch}}
-
       - name: Build and push image
         uses: docker/build-push-action@v6
         with:
@@ -85,7 +84,6 @@ jobs:
       - name: Build image for scanning
         run: |
           docker build -t ${{ env.PROJECT }}-${{ matrix.component }}:scan ./${{ matrix.component }}
-
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
@@ -141,10 +139,8 @@ jobs:
         run: |
           IMAGE_TAG=${{ steps.sha.outputs.short }}
           sed -i 's/tag: .*/tag: ${IMAGE_TAG}/' helm/cart/values.yaml
-
           echo "✅ Updated images to tag: ${IMAGE_TAG}"
           grep "tag:" helm/cart/values.yaml
-
       - name: Commit and push manifest update
         run: |
           git config user.name "github-actions[bot]"
