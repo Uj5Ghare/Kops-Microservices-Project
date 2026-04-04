@@ -19,7 +19,7 @@ permissions:
 env:
   PROJECT: "shopstack"
   ENV: "prod"
-
+  
 jobs:
   build:
     name: "🐳 Build ${{ matrix.component }}"
