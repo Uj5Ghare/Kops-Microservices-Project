@@ -1,0 +1,33 @@
+# MySQL Service
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mysql
+  namespace: argocd
+spec:
+  destination:
+    namespace: shopstack
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    helm:
+      parameters:
+        - name: hpa.enabled
+          value: "false"
+        - name: pdb.enabled
+          value: "true"
+        - name: spc.enabled
+          value: "true"
+        - name: defaults.namespace.enabled
+          value: "true"
+        - name: defaults.namespace.name
+          value: "shopstack"
+      valueFiles:
+        - values.yaml
+    path: helm/mysql
+    repoURL: https://github.com/Uj5Ghare/Kops-Microservices-Project.git
+    targetRevision: k8s/staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
