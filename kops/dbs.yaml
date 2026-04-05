@@ -1,0 +1,23 @@
+apiVersion: kops.k8s.io/v1alpha2
+kind: InstanceGroup
+metadata:
+  creationTimestamp: "2026-04-05T10:38:49Z"
+  labels:
+    kops.k8s.io/cluster: shopstack.ujwal5ghare.xyz
+  name: shopstack-dbs
+spec:
+  image: 099720109477/ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-20251212
+  machineType: c5.large
+  maxSize: 3
+  minSize: 1
+  nodeLabels:
+    kops.k8s.io/instance: shopstack-dbs
+    topology.kubernetes.io/zone: ap-south-1a
+  role: Node
+  rootVolumeSize: 50
+  subnets:
+  - ap-south-1a
+  suspendProcesses:
+  - AZRebalance
+  taints:
+  - kops.k8s.io/instance=shopstack-dbs:NoSchedule

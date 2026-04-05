@@ -1,0 +1,15 @@
+apiVersion: kops.k8s.io/v1alpha2
+kind: InstanceGroup
+metadata:
+  creationTimestamp: "2026-04-05T10:28:18Z"
+  labels:
+    kops.k8s.io/cluster: shopstack.ujwal5ghare.xyz
+  name: control-plane
+spec:
+  image: 099720109477/ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-20251212
+  machineType: t3a.medium
+  maxSize: 1
+  minSize: 1
+  role: Master
+  subnets:
+  - ap-south-1a
