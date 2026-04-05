@@ -1,0 +1,88 @@
+apiVersion: kops.k8s.io/v1alpha2
+kind: Cluster
+metadata:
+  creationTimestamp: "2026-04-05T10:28:18Z"
+  name: shopstack.ujwal5ghare.xyz
+spec:
+  api:
+    loadBalancer:
+      class: Network
+      type: Public
+  authorization:
+    rbac: {}
+  awsLoadBalancerController:
+    enabled: true
+  certManager:
+    enabled: true
+  channel: stable
+  cloudProvider: aws
+  clusterAutoscaler:
+    balanceSimilarNodeGroups: true
+    enabled: true
+    expander: least-waste
+    skipNodesWithLocalStorage: false
+    skipNodesWithSystemPods: true
+  configBase: s3://shopstack-prod-k8s/shopstack.ujwal5ghare.xyz
+  etcdClusters:
+  - cpuRequest: 200m
+    etcdMembers:
+    - encryptedVolume: true
+      instanceGroup: control-plane-ap-south-1a
+      name: a
+    manager:
+      backupRetentionDays: 90
+    memoryRequest: 100Mi
+    name: main
+  - cpuRequest: 100m
+    etcdMembers:
+    - encryptedVolume: true
+      instanceGroup: control-plane-ap-south-1a
+      name: a
+    manager:
+      backupRetentionDays: 90
+    memoryRequest: 100Mi
+    name: events
+  iam:
+    allowContainerRegistry: true
+    legacy: false
+  kubeProxy:
+    enabled: false
+  kubelet:
+    anonymousAuth: false
+  kubernetesApiAccess:
+  - 0.0.0.0/0
+  - ::/0
+  kubernetesVersion: 1.33.7
+  metricsServer:
+    enabled: true
+  networkCIDR: 172.20.0.0/16
+  networking:
+    cilium:
+      enableNodePort: true
+  nonMasqueradeCIDR: 100.64.0.0/10
+  podIdentityWebhook:
+    enabled: true
+  serviceAccountIssuerDiscovery:
+    additionalAudiences:
+    - sts.amazonaws.com
+    discoveryStore: s3://shopstack-oidc-store/shopstack.ujwal5ghare.xyz
+    enableAWSOIDCProvider: true
+  sshAccess:
+  - 0.0.0.0/0
+  - ::/0
+  subnets:
+  - cidr: 172.20.0.0/18
+    name: ap-south-1a
+    type: Public
+    zone: ap-south-1a
+  - cidr: 172.20.64.0/18
+    name: ap-south-1b
+    type: Public
+    zone: ap-south-1b
+  - cidr: 172.20.128.0/18
+    name: ap-south-1c
+    type: Public
+    zone: ap-south-1c
+  topology:
+    dns:
+      type: None
