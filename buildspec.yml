@@ -10,14 +10,44 @@ phases:
         commands:
             - echo "LOGIN TO ECR....................."
             - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$PROJECT
+            
+            - echo "DETECTING CHANGED FOLDERS....................."
+            - |
+                if [ "$CODEBUILD_RESOLVED_SOURCE_VERSION" != "" ]; then
+                    CHANGED_FILES=$(git diff --name-only $CODEBUILD_SOURCE_VERSION^ $CODEBUILD_SOURCE_VERSION 2>/dev/null || echo "")
+                else
+                    CHANGED_FILES=""
+                fi
+                
+                # Detect which service folder changed
+                SERVICE=""
+                if echo "$CHANGED_FILES" | grep -q "cart/"; then SERVICE="cart"; fi
+                if echo "$CHANGED_FILES" | grep -q "catalogue/"; then SERVICE="catalogue"; fi
+                if echo "$CHANGED_FILES" | grep -q "dispatch/"; then SERVICE="dispatch"; fi
+                if echo "$CHANGED_FILES" | grep -q "mongo/"; then SERVICE="mongo"; fi
+                if echo "$CHANGED_FILES" | grep -q "mysql/"; then SERVICE="mysql"; fi
+                if echo "$CHANGED_FILES" | grep -q "payment/"; then SERVICE="payment"; fi
+                if echo "$CHANGED_FILES" | grep -q "ratings/"; then SERVICE="ratings"; fi
+                if echo "$CHANGED_FILES" | grep -q "shipping/"; then SERVICE="shipping"; fi
+                if echo "$CHANGED_FILES" | grep -q "user/"; then SERVICE="user"; fi
+                if echo "$CHANGED_FILES" | grep -q "web/"; then SERVICE="web"; fi
+                
+                # If no specific service changed, exit gracefully
+                if [ "$SERVICE" = "" ]; then
+                    echo "NO SERVICE FOLDER CHANGED - SKIPPING BUILD"
+                    exit 0
+                fi
+                
+                echo "DETECTED CHANGED SERVICE: $SERVICE"
+                export SERVICE=$SERVICE
     build:
         commands:
             - echo "UPDATING SHFILES PERMISSION....................."
             - chmod +x slack/build_notify.sh && chmod +x slack/deploy_notify.sh
 
-            - echo "UPDATING DOCKER IMAGE VERSION....................."
-            - LATEST_TAG=$(aws ecr describe-images --repository-name $PROJECT --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]' --output text || echo "v1.0.0")
-            - PRE_VERSION=$(aws ecr describe-images --repository-name $PROJECT --query 'sort_by(imageDetails,& imagePushedAt)[-2].imageTags[0]' --output text || echo "v1.0.0")
+            - echo "UPDATING DOCKER IMAGE VERSION FOR SERVICE: $SERVICE....................."
+            - LATEST_TAG=$(aws ecr describe-images --repository-name $PROJECT-$SERVICE --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]' --output text || echo "v1.0.0")
+            - PRE_VERSION=$(aws ecr describe-images --repository-name $PROJECT-$SERVICE --query 'sort_by(imageDetails,& imagePushedAt)[-2].imageTags[0]' --output text || echo "v1.0.0")
             - |
                 if [ "$LATEST_TAG" = "None" ]; then LATEST_TAG="v1.0.0"; fi
                 IFS='.' read MAJOR MINOR PATCH <<EOF
@@ -29,25 +59,25 @@ phases:
             - echo "SENDING SLACK NOTIFICATION..................."
             - ./slack/build_notify.sh
 
-            - echo "BUILDING DOCKER IMAGE................."
+            - echo "BUILDING DOCKER IMAGE FOR SERVICE: $SERVICE................."
             - docker buildx create --name shopstack
             - docker buildx use shopstack
-            - docker buildx build --push . -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$PROJECT:$TAG --cache-from type=registry,ref=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$PROJECT:$OLD_TAG --cache-to type=inline
+            - docker buildx build --push ./$SERVICE -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$PROJECT:$TAG --cache-from type=registry,ref=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$PROJECT:$OLD_TAG --cache-to type=inline
             
             - echo "CLONING REPO AND UPDATING GIT USER................"
             - |
-                git clone https://github.com/Uj5Ghare/Kops-Microservices-Project.git -b $CODECOMMIT_BRANCH
+                git clone https://github.com/Uj5Ghare/Kops-Microservices-Project.git -b $TARGET_BRANCH
                 cd Kops-Microservices-Project
-                git checkout $CODECOMMIT_BRANCH
+                git checkout $TARGET_BRANCH
                 git config --global user.email ujwal5ghare@gmail.com
                 git config --global user.name Uj5Ghare
 
             - echo "UPDATING DOCKER IMAGE TAG AND PUSH TO REPO..............."
             - |
-                sed -i "s/tag: .*/tag: $TAG/" $FILE_PATH
+                sed -i "s/tag: .*/tag: $TAG/" helm/$SERVICE/values.yaml
                 git add .
-                git commit -m "[CI/CD](Updated) docker image tag to $TAG with CI/CD in $PROJECT"
-                git push origin $CODECOMMIT_BRANCH
+                git commit -m "[CI/CD](Updated) docker image tag to $TAG for $SERVICE with CI/CD in $PROJECT"
+                git push origin $TARGET_BRANCH
                 
             - echo "SENDING SLACK NOTIFICATION..................."
             - ./slack/deploy_notify.sh
