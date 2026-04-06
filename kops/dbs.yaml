@@ -16,8 +16,8 @@ spec:
   role: Node
   rootVolumeSize: 50
   subnets:
-  - ap-south-1a
+  - ap-south-1b
   suspendProcesses:
   - AZRebalance
   taints:
-  - kops.k8s.io/instance=shopstack-dbs:NoSchedule
+  - app=shopstack-dbs:NoSchedule

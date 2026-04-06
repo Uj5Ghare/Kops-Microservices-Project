@@ -7,59 +7,25 @@ defaults:
   annotations:
     lang: mysql
 
-# DEPLOYMENT CONFIGURATION
-deploy:
-  replicaCount: 1
-  image:
-    repository: ghcr.io/shopstack/shopstack-mysql
-    tag: latest
-    pullPolicy: IfNotPresent
-  affinity:
-    nodeAffinity:
-      key: app
-      operator: In
-      values: shopstack
-  strategy:
+# STATEFULSET CONFIGURATION
+statefulSet:
+  serviceName: mysql
+  podManagementPolicy: OrderedReady
+  updateStrategy:
     type: RollingUpdate
-    maxSurge: 50%
-    maxUnavailable: 0
-  resources:
-    requests:
-      memory: "200Mi" 
-      cpu: "100m"
-    limits:
-      memory: "500Mi"
-      cpu: "200m"
-  restartPolicy: Always
-  readinessProbe:
-    enabled: true
-    path: /
-    scheme: HTTP
-    initialDelaySeconds: 10
-    periodSeconds: 5
-    failureThreshold: 3
-    successThreshold: 1
-  livenessProbe:
-    enabled: true
-    path: /
-    scheme: HTTP
-    initialDelaySeconds: 30
-    periodSeconds: 10
-    failureThreshold: 3
-    successThreshold: 1
-  tolerations:
-    key: app
-    operator: Equal
-    value: shopstack
-  env:
-    - name: MYSQL_ALLOW_EMPTY_PASSWORD
-      value: "yes"
-    - name: MYSQL_DATABASE
-      value: "cities"
-    - name: MYSQL_USER
-      value: "shipping"
-    - name: MYSQL_PASSWORD
-      value: "secret"
+    rollingUpdate:
+      partition: 0
+  volumeClaimTemplates:
+    - name: data
+      accessModes:
+        - "ReadWriteOnce"
+      resources:
+        requests:
+          storage: 1Gi
+      storageClassName: ""
+  volumeMounts:
+    - name: data
+      mountPath: /var/lib/mysql
 
 # SERVICE CONFIGURATION
 service:
