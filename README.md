@@ -21,6 +21,14 @@ A comprehensive e-commerce microservices architecture built with containerized s
 
 ShopStack implements a microservices-based e-commerce platform with the following core components:
 
+### 📊 Architecture Diagrams
+
+#### **Original Architecture** (Legacy Reference)
+![Original Architecture](kops-arch.png)
+
+#### **Current ShopStack Architecture** (Updated)
+![ShopStack Architecture](shopstack-arch.png)
+
 ### 🎯 Business Services
 - **Web Frontend** - Nginx-based UI gateway with reverse proxy
 - **User Service** - User authentication and management (MongoDB + Redis)
