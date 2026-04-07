@@ -2,7 +2,8 @@
 
 A comprehensive e-commerce microservices architecture built with containerized services, featuring modern CI/CD pipelines, monitoring, and observability.
 
-![Architecture Diagram](kops-arch.png)
+![Original Architecture Diagram](arch.png)
+![ShopStack Architecture Diagram](shopstack-arch.png)
 
 ## 📋 Table of Contents
 
