@@ -1,0 +1,44 @@
+# This job is meant primarily for cleaning up CRDs on CI systems.
+# Using this on production systems, especially those that have multiple releases of Velero, will be destructive.
+cleanUpCRDs: false
+
+initContainers:
+  - name: velero-plugin-for-aws
+    image: velero/velero-plugin-for-aws:v1.13.0
+    imagePullPolicy: IfNotPresent
+    volumeMounts:
+      - mountPath: /target
+        name: plugins
+credentials:
+  useSecret: true
+  secretContents:
+    cloud: |
+      [default]
+      aws_access_key_id="<access-key>"
+      aws_secret_access_key="<secret-access-key>"
+
+configuration:
+  backupStorageLocation:
+  - bucket: <bucket-name>
+    prefix: backups
+    provider: aws
+    region: ap-south-1
+  volumeSnapshotLocation:
+  - config:
+      region: ap-south-1
+    provider: aws
+tolerations:
+    key: app
+    operator: Equal
+    value: shopstack
+
+schedules:
+  shopstack-preprod:
+    disabled: false
+    schedule: "0 0 29 * *" # Every 29th day at 12AM
+    template:
+      ttl: "720h" # 30 days
+      snapshotVolumes: true
+      includeClusterResources: true
+      includedNamespaces:
+      - shopstack

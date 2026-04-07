@@ -1,0 +1,183 @@
+# Change the fleet.token and fleet.ca.value as per your fleet server configuration
+outputs:
+  default:
+    type: ESPlainAuthBasic
+    url: "https://<domain>:9200"
+    username: "elastic"
+    password: "<password>"
+    secretName: "elastic-agent"
+    name: "elastic-agent" 
+    namespace: "monitor"
+
+kubernetes:
+  enabled: true
+  output: default
+  namespace: "monitor"
+  hints:
+    enabled: false
+  state:
+    enabled: true
+    agentAsSidecar:
+      enabled: false
+      resources:
+        limits:
+          memory: 800Mi
+        requests:
+          cpu: 100m
+          memory: 400Mi
+    host: "kube-state-metrics:8080"
+  metrics:
+    enabled: true
+  apiserver:
+    enabled: true
+  proxy:
+    enabled: false
+  containers:
+    metrics:
+      enabled: true
+    state:
+      enabled: true
+    logs:
+      enabled: true
+    audit_logs:
+      enabled: false
+  pods:
+    metrics:
+      enabled: true
+    state:
+      enabled: true
+  deployments:
+    state:
+      enabled: true
+  statefulsets:
+    state:
+      enabled: true
+  daemonsets:
+    state:
+      enabled: true
+  replicasets:
+    state:
+      enabled: true
+  namespaces:
+    state:
+      enabled: true
+  volumes:
+    metrics:
+      enabled: true
+  nodes:
+    metrics:
+      enabled: true
+    state:
+      enabled: true
+  storageclasses:
+    state:
+      enabled: true
+  jobs:
+    state:
+      enabled: true
+  cronjobs:
+    state:
+      enabled: true
+  persistentvolumes:
+    state:
+      enabled: true
+  persistentvolumeclaims:
+    state:
+      enabled: true
+  resourcequotas:
+    state:
+      enabled: true
+  services:
+    state:
+      enabled: true
+  system:
+    metrics:
+      enabled: true
+
+system:
+  enabled: false
+  output: default
+  namespace: monitor
+  authLogs:
+    enabled: true
+  syslog:
+    enabled: true
+  metrics:
+    enabled: true
+
+agent:
+  version: 9.2.0
+  image:
+    repository: docker.elastic.co/elastic-agent/elastic-agent-wolfi
+    pullPolicy: IfNotPresent
+    tag: "9.2.0"
+  imagePullSecrets: []
+  engine: k8s
+  unprivileged: false
+  fleet:
+    enabled: true
+    url: "https://<domain>:8220"
+    token: "bHE2T05ac0JZMFJRd0skdljozjelwkjenrFydFNuYmlxY0dCblNEZw=="
+    insecure: true
+    force: false
+    ca:    # Get this certificate from fleet server
+      value: |
+        -----BEGIN CERTIFICATE-----
+        MIIDWjCCAkKgAwIBAgIVANWJi1N3OHY07pgEw9lrnkNMUtCGMA0GCSqGSIb3DQEB
+        CwUAMDQxMjAwBgNVBAMTKUVsYXN0aWMgQ2VydGlmaWNhdGUgVG9vbCBBdXRvZ2Vu
+        ZXJhdGVkIENBMB4XDTI1MTIxOTA3MzIxNVoXDTI4MTIxODA3MzIxNVowNDEyMDAG
+        A1UEAxMpRWxhc3RpYyBDZXJ0aWZpY2F0ZSBUb29sIEF1dG9nZW5lcmF0ZWQgQ0Ew
+        ggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDFkNgTAPVHrRtqeFm8xZ0/
+        oTp1HkP+quKxXEEJMxkUdGNV3iSDWowJQc/pUbF9oowtN73x7NjmvwvHdNKhvD6/
+        bZNCVBQ4b+KKg2WDezRQOgHNyGrwlcE4EfTKftJBZx0n+7oov3ORlNQQiK7DSomL
+        +FMhV0ainO8F/WlJh2KkHBCbBG5hHOJPXi+UPzZNhjzRGUlR+HnSw+GVG6uxXE7h
+        ogfh1bb2MwrY+YgL/Rtg2bAXWw6b5W49R6lDApSUeR8dKIUAWd1s0zaGFGPk6eUn
+        AgMBAAGjYzBhMB0GA1UdDgQWBBTcA34P5EPZvDIlw2RAwnQ6tDvsbDAfBgNVHSME
+        krotwWQftqnEfBMLy7KZzBz0qlPp/zq+hFl0O2M5jTD3dT6gIT53xCTN+qGBg0dr
+        2NIfVyQJgnMbsYZLQFwh2fIKu3idwfdIdTKAoIiIuQWWVCB6Awnq4Kt9Kxo7Gw==
+        -----END CERTIFICATE-----
+    preset: perNode
+  presets:
+    perNode:
+      mode: daemonset
+      serviceAccount:
+        create: true
+      clusterRole:
+        create: true
+      hostNetwork: true
+      resources:
+        limits:
+          memory: 1000Mi
+        requests:
+          cpu: 100m
+          memory: 400Mi
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+        key: app
+        operator: Equal
+        value: shopstack
+      statePersistence: HostPath
+      extraEnvs:
+        - name: ELASTIC_NETINFO
+          value: "false"
+      agent:
+        monitoring:
+          namespace: monitor
+          use_output: default
+          enabled: true
+          logs: true
+          metrics: true
+      providers:
+        kubernetes:
+          node: ${NODE_NAME}
+          scope: node
+
+kube-state-metrics:
+  enabled: true
+  fullnameOverride: "kube-state-metrics"
+  replicas: 1
+  tolerations:
+    key: app
+    operator: Equal
+    value: shopstack

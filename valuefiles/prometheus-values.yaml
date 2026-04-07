@@ -1,0 +1,175 @@
+grafana: 
+  enabled: false
+sidecar: 
+  dashboard: 
+    enabled: false
+
+prometheus: 
+  service: 
+    type: NodePort
+    nodePort: 30003
+  prometheusSpec:
+    retention: 30d
+    retentionSize: "40GB"
+    maximumStartupDurationSeconds: 300
+    tolerations:
+      key: app
+      operator: Equal
+      value: shopstack
+
+alertmanager: 
+  config:
+    global:
+      resolve_timeout: 5m
+    inhibit_rules:
+    - equal:
+      - namespace
+      - alertname
+      source_matchers:
+      - severity = critical
+      target_matchers:
+      - severity =~ warning|info
+    - equal:
+      - namespace
+      - alertname
+      source_matchers:
+      - severity = warning
+      target_matchers:
+      - severity = info
+    - equal:
+      - namespace
+      source_matchers:
+      - alertname = InfoInhibitor
+      target_matchers:
+      - severity = info
+    - target_matchers:
+      - alertname = InfoInhibitor
+    receivers:
+    - name: slack-alerts
+      slack_configs:
+      - api_url: "https://hooks.slack.com/services/TDBQ1QH8A/XXXXXXXXXXXXXXXXXXXXXXXXXX"
+        channel: "#argocd"
+        icon_emoji: ":kubernetes:"
+        text: |
+          🚨 *Kubernetes Alert*
+          *Alert:* {{ .CommonLabels.alertname }}
+          *Severity:* {{ .CommonLabels.severity }}
+          *Namespace:* {{ .CommonLabels.namespace }}
+          {{ .CommonAnnotations.summary }}
+          {{ .CommonAnnotations.description }}
+        send_resolved: true
+    - name: "null"
+    route:
+      group_by:
+      - namespace
+      group_interval: 1m
+      group_wait: 10s
+      receiver: "null"
+      repeat_interval: 3h
+      routes:
+      - matchers:
+        - alertname="Watchdog"
+        receiver: "null"
+      - matchers:
+        - alertname="InfoInhibitor"
+        receiver: "null"
+      - matchers:
+        - alertname="HighNodeCPU"
+        receiver: slack-alerts
+      - matchers:
+        - namespace=~"shopstack"
+        receiver: slack-alerts
+    templates:
+    - /etc/alertmanager/config/*.tmpl
+    
+  service: 
+    type: NodePort
+    nodePort: 30004
+  alertmanagerSpec: 
+    tolerations:
+      key: app
+      operator: Equal
+      value: shopstack
+
+crds: 
+  upgradeJobs: 
+    tolerations:
+      key: app
+      operator: Equal
+      value: shopstack
+
+prometheusOperator: 
+  tolerations:
+    key: app
+    operator: Equal
+    value: shopstack
+  admissionWebhooks: 
+    patch: 
+      tolerations:
+      key: app
+      operator: Equal
+      value: shopstack
+  addmissionsWebhooks: 
+    deployment: 
+      tolerations:
+        key: app
+        operator: Equal
+        value: shopstack
+thanosRuler: 
+  thanosRulerSpec: 
+    tolerations:
+      key: app
+      operator: Equal
+      value: shopstack
+
+kube-state-metrics:
+  tolerations:
+    key: app
+    operator: Equal
+    value: shopstack
+
+# prometheusOperator: 
+#   addmissionsWebhooks: 
+#     deployment: 
+#       tolerations :
+#         - key: app
+#  
+#           value: shopstack
+#         - key: app
+#  
+#           value: shopstack
+# prometheusOperator: 
+#   admissionWebhooks: 
+#     patch: 
+#       tolerations:
+#         - key: app
+#  
+#           value: shopstack
+#         - key: app
+#  
+#           value: shopstack
+
+# additionalPrometheusRulesMap:
+#   custom-cpu-alerts:
+#     groups:
+#       - name: custom_cpu_alerts
+#         rules:
+#           Alert if any Node is consuming > 50% CPU
+#           - alert: HighNodeCPU
+#             expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 50
+#             for: 2m
+#             labels:
+#               severity: warning
+#             annotations:
+#               summary: "High CPU usage on Node {{ $labels.instance }}"
+#               description: "Node {{ $labels.instance }} has been above 50% CPU usage for more than 2m. (Current value: {{ $value }}%)"
+              
+#           Alert if any Node is consuming > 80% CPU
+#           - alert: HighNodeCPU
+#             expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 80
+#             for: 2m
+#             labels:
+#               severity: critical
+#             annotations:
+#               summary: "Critical CPU usage on Node {{ $labels.instance }}"
+#               description: "Node {{ $labels.instance }} has been above 80% CPU usage for more than 2m. (Current value: {{ $value }}%)"

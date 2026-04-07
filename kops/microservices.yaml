@@ -20,4 +20,4 @@ spec:
   suspendProcesses:
   - AZRebalance
   taints:
-  - kops.k8s.io/instance=shopstack-microservices:NoSchedule
+  - app=shopstack:NoSchedule

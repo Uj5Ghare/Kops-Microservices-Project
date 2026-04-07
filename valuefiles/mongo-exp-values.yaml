@@ -1,0 +1,18 @@
+mongodb:
+  uri: "mongodb://user:pass@mongo-0.mongo.mongodb.svc.cluster.local:27017"
+# mongodb.uri=mongodb://<user>:<pass>@stg-mongo.mongodb.svc.cluster.local:27017
+
+serviceMonitor:
+  enabled: true
+
+serviceMonitor:
+  additionalLabels:
+    release: prometheus-community
+
+tolerations:
+    key: app
+    operator: Equal
+    value: shopstack
+
+
+# helm upgrade mongodb-exporter prometheus-community/prometheus-mongodb-exporter --values mongodb-values.yaml

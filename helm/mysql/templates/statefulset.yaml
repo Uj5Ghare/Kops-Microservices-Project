@@ -5,8 +5,11 @@ metadata:
   labels:
     {{- include "cart.labels" . | nindent 4 }}
 spec:
-  serviceName: {{ .Values.defaults.labels }}
-  replicas: {{ .Values.deploy.replicaCount }}
+  serviceName: {{ .Values.statefulSet.serviceName }}
+  podManagementPolicy: {{ .Values.statefulSet.podManagementPolicy }}
+  replicas: 1
+  updateStrategy:
+    {{- toYaml .Values.statefulSet.updateStrategy | nindent 4 }}
   selector:
     matchLabels:
       app: {{ .Values.defaults.labels }}
@@ -15,70 +18,78 @@ spec:
       annotations:
         {{- include "cart.annotations" . | nindent 8 }}
     spec:
-      {{- with .Values.deploy.tolerations }}
       tolerations:
-        - key: {{ .key }}
-          operator: {{ .operator }}
-          value: {{ .value }}
-      {{- end }}
-      {{- with .Values.deploy.affinity }}
+        - key: app
+          operator: Equal
+          value: shopstack-dbs
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
             - matchExpressions:
-              - key: {{ .Values.deploy.affinity.nodeAffinity.key }}
-                operator: {{ .Values.deploy.affinity.nodeAffinity.operator }}
+              - key: app
+                operator: In
                 values:
-                - {{ .Values.deploy.affinity.nodeAffinity.values }}
-      {{- end }}
+                - shopstack
       containers:
         - name: {{ .Chart.Name }}
-          image: "{{ .Values.deploy.image.repository }}:{{ .Values.deploy.image.tag }}"
-          imagePullPolicy: {{ .Values.deploy.image.pullPolicy }}
+          image: "ghcr.io/shopstack/shopstack-mysql:latest"
+          imagePullPolicy: IfNotPresent
           ports:
             - name: http
               containerPort: 3306
               protocol: TCP
-          {{- if .Values.deploy.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
-              path: {{ .Values.deploy.readinessProbe.path }}
+              path: /
               port: http
-              scheme: {{ .Values.deploy.readinessProbe.scheme }}
-            initialDelaySeconds: {{ .Values.deploy.readinessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.deploy.readinessProbe.periodSeconds }}
-            failureThreshold: {{ .Values.deploy.readinessProbe.failureThreshold }}
-            successThreshold: {{ .Values.deploy.readinessProbe.successThreshold }}
-          {{- end }}
-          {{- if .Values.deploy.livenessProbe.enabled }}
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
           livenessProbe:
             httpGet:
-              path: {{ .Values.deploy.livenessProbe.path }}
+              path: /
               port: http
-              scheme: {{ .Values.deploy.livenessProbe.scheme }}
-            initialDelaySeconds: {{ .Values.deploy.livenessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.deploy.livenessProbe.periodSeconds }}
-            failureThreshold: {{ .Values.deploy.livenessProbe.failureThreshold }}
-            successThreshold: {{ .Values.deploy.livenessProbe.successThreshold }}
-          {{- end }}
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+            successThreshold: 1
           env:
-            {{- range .Values.deploy.env }}
-            - name: {{ .name }}
-              value: {{ .value | quote }}
-            {{- end }}
+            - name: MYSQL_ALLOW_EMPTY_PASSWORD
+              value: "yes"
+            - name: MYSQL_DATABASE
+              value: "cities"
+            - name: MYSQL_USER
+              value: "shipping"
+            - name: MYSQL_PASSWORD
+              value: "secret"
           resources:
-            {{- toYaml .Values.deploy.resources | nindent 12 }}
+            requests:
+              memory: "200Mi"
+              cpu: "100m"
+            limits:
+              memory: "500Mi"
+              cpu: "200m"
           volumeMounts:
-            - name: data
-              mountPath: /var/lib/mysql
-      restartPolicy: {{ .Values.deploy.restartPolicy }}
+            {{- range .Values.statefulSet.volumeMounts }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+            {{- end }}
+      restartPolicy: Always
   volumeClaimTemplates:
+    {{- range .Values.statefulSet.volumeClaimTemplates }}
     - metadata:
-        name: data
+        name: {{ .name }}
       spec:
         accessModes:
-          - "ReadWriteOnce"
+          {{- toYaml .accessModes | nindent 10 }}
         resources:
           requests:
-            storage: 1Gi
+            storage: {{ .resources.requests.storage }}
+        {{- if .storageClassName }}
+        storageClassName: {{ .storageClassName }}
+        {{- end }}
+    {{- end }}
