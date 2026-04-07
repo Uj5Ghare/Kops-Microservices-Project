@@ -1,0 +1,143 @@
+kind: "DaemonSet"
+variant: cloudwatch
+
+image:
+  repository: "fluent/fluentd-kubernetes-daemonset"
+  pullPolicy: "IfNotPresent"
+  tag: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: null
+
+rbac:
+  create: true
+
+podSecurityPolicy:
+  enabled: true
+  annotations: {}
+
+env:
+  - name: AWS_REGION
+    value: "ap-south-1"
+  - name: LOG_GROUP_NAME
+    value: "/aws/kops/k8s/shopstack"
+  - name: AWS_ACCESS_KEY_ID
+    valueFrom:
+      secretKeyRef:
+        key: AWS_ACCESS_KEY_ID
+        name: aws-creds
+  - name: AWS_SECRET_ACCESS_KEY
+    valueFrom:
+      secretKeyRef:
+        key: AWS_SECRET_ACCESS_KEY
+        name: aws-creds
+  - name: K8S_NODE_NAME
+    valueFrom:
+      fieldRef:
+        fieldPath: spec.nodeName
+
+tolerations:
+    key: app
+    operator: Equal
+    value: shopstack
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 200Mi
+
+livenessProbe: {}
+
+readinessProbe: {}
+
+service:
+  enabled: true
+  type: "ClusterIP"
+  annotations: {}
+  ports: []
+
+fileConfigs:
+  01_sources.conf: |-
+    <source>
+      @type tail
+      path /var/log/containers/*.log
+      pos_file fluentd-docker.pos
+      read_from_head true
+      tag kubernetes.*
+      <parse>
+        @type multi_format
+        <pattern>
+          format json
+          time_key time
+          time_type string
+          time_format "%Y-%m-%dT%H:%M:%S.%NZ"
+          keep_time_key false
+        </pattern>
+        <pattern>
+          format regexp
+          expression /^(?<time>.+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
+          time_format '%Y-%m-%dT%H:%M:%S.%N%:z'
+          keep_time_key false
+        </pattern>
+      </parse>
+    </source>
+
+    <source>
+      @type prometheus
+      bind 0.0.0.0
+      port 24231
+      metrics_path /metrics
+    </source>
+
+    <source>
+      @type prometheus_output_monitor
+      interval 10
+      <labels>
+        hostname ${hostname}
+      </labels>
+    </source>
+
+  02_filters.conf: |-
+    <filter kubernetes.var.log.containers.**>
+      @type kubernetes_metadata
+    </filter>
+
+    <filter kubernetes.var.log.containers.**_shopstack_**>
+      @type record_transformer
+      enable_ruby true
+      <record>
+        message ${record.dig("log")}
+        cw_log_stream ${record.dig("kubernetes", "container_name")}
+      </record>
+      remove_keys docker,kubernetes,logtag,stream,log
+    </filter>
+
+  03_dispatch.conf: ""
+
+  04_outputs.conf: |-
+    <match kubernetes.var.log.containers.**_shopstack_**>
+      @type cloudwatch_logs
+      log_group_name "/aws/kops/k8s/shopstack/"
+      log_stream_name_key cw_log_stream
+      auto_create_stream true
+      region "#{ENV['AWS_REGION']}"
+      aws_key_id "#{ENV['AWS_ACCESS_KEY_ID']}"
+      aws_sec_key "#{ENV['AWS_SECRET_ACCESS_KEY']}"
+      remove_log_stream_name_key true
+      <buffer>
+        flush_interval 5
+        chunk_limit_size 2m
+        queued_chunks_limit_size 32
+        retry_forever true
+      </buffer>
+      <format>
+        @type single_value
+        message_key message
+      </format>
+    </match>
+
+dashboards:
+  enabled: "false"
+

@@ -1,0 +1,49 @@
+replicaCount: 1
+image:
+  repository: andriik/mongodb-profiler-exporter
+  pullPolicy: IfNotPresent
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: false
+  automount: true
+  annotations: {}
+  name: ""
+
+service:
+  type: ClusterIP
+  port: 80
+  containerPort: 9179
+
+serviceMonitor:
+  enabled: true
+  endpoints:
+    relabelings: []
+
+env:
+  MONGODB_URI: "mongodb://user:pass@mongo-0.mongo.mongodb.svc.cluster.local:27017/shopstack?replicaSet=rs0&authSource=admin" # !CHANGEME
+  # WAIT_INTERVAL: "10"
+  # MAX_STRING_SIZE: "1000"
+  # LISTEN_IP: "0.0.0.0"
+  # VERBOSE: "true"
+
+tolerations:
+    key: app
+    operator: Equal
+    value: shopstack
+
+configmapEnv: ""
+secretEnv: ""
+resources: {}
+volumes: []
+volumeMounts: []
+nodeSelector: {}
+podAnnotations: {}
+podLabels: {}
+podSecurityContext: {}
+securityContext: {}
+

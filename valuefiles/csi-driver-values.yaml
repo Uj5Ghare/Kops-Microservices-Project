@@ -1,0 +1,33 @@
+linux:
+  enabled: true
+  image:
+    repository: registry.k8s.io/csi-secrets-store/driver
+    tag: v1.5.3
+    #digest: sha256:
+    pullPolicy: IfNotPresent
+
+  crds:
+    enabled: true
+    image:
+      repository: registry.k8s.io/csi-secrets-store/driver-crds
+      tag: v1.5.3
+      pullPolicy: IfNotPresent
+    
+  # ref: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  # An empty key with operator Exists matches all keys, values and effects which means this will tolerate everything.
+  tolerations:
+    key: app
+    operator: Equal
+    value: shopstack
+
+## Install RBAC roles and bindings required for K8S Secrets syncing if true
+syncSecret:
+  enabled: true
+
+## Enable secret rotation feature [alpha]
+enableSecretRotation: true
+
+## Secret rotation poll interval duration
+rotationPollInterval: 60s
+
+
