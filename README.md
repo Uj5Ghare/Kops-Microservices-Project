@@ -610,9 +610,9 @@ git push origin k8s/preprod
 ```
 
 ### 3. Monitoring Access
-- **Kibana Dashboard:** `https://observability.theshopstack.com`
+- **Kibana Dashboard:** `https://observability.ujwal5ghare.xyz`
 - **Prometheus:** Available via cluster port forwarding
-- **ArgoCD:** `https://argocd.theshopstack.com`
+- **ArgoCD:** `https://argocd.ujwal5ghare.xyz`
 
 ## 🔄 CI/CD Workflow
 
